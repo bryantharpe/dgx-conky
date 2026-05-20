@@ -1,4 +1,4 @@
-# dgx-widget
+# dgx-conky
 
 A lightweight desktop widget that displays live GPU utilization and system memory stats from a remote [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark/) over SSH.
 
