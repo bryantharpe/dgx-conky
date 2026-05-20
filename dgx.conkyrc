@@ -1,0 +1,35 @@
+conky.config = {
+    alignment = 'top_right',
+    gap_x = 30,
+    gap_y = 60,
+    minimum_width = 300,
+    minimum_height = 5,
+
+    update_interval = 3.0,
+    double_buffer = true,
+    no_buffers = true,
+
+    own_window = true,
+    own_window_type = 'desktop',
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+    own_window_argb_visual = true,
+    own_window_argb_value = 200,           -- 0-255, lower = more transparent
+    own_window_transparent = false,
+
+    draw_borders = false,
+    draw_shades = false,
+    draw_outline = false,
+    draw_graph_borders = false,
+
+    use_xft = true,
+    font = 'DejaVu Sans Mono:size=11',
+    default_color = 'white',
+    override_utf8_locale = true,
+    uppercase = false,
+}
+
+conky.text = [[
+${color #76b900}DGX Spark${color}
+${hr 1}
+${execpi 3 /home/tharpeboxadmin/code/dgx-widget/dgx_metrics.sh}
+]]

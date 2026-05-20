@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=DGX Widget
+Exec=bash -c 'sleep 10 && conky -c /home/tharpeboxadmin/code/dgx-widget/dgx.conkyrc'
+Hidden=false
+X-GNOME-Autostart-enabled=true
