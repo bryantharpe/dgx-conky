@@ -4,13 +4,7 @@ A lightweight desktop widget that displays live GPU utilization and system memor
 
 Built on [Conky](https://github.com/brndnmtthws/conky), it renders as a transparent overlay pinned to the desktop — always visible, never in the way.
 
-```
-DGX Spark
-─────────────────────────────
-NVIDIA GB10                 
-GPU   ████████░░░░  68%
-MEM   █████░░░░░░░  41.20 / 96 GB
-```
+![DGX Widget screenshot](assets/screenshot.png)
 
 ## How it works
 
