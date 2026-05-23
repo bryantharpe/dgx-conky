@@ -4,7 +4,7 @@ A lightweight desktop widget that displays live CPU utilization, GPU utilization
 
 Built on [Conky](https://github.com/brndnmtthws/conky), it renders as a transparent overlay pinned to the desktop — always visible, never in the way.
 
-![DGX Widget screenshot](assets/screenshot.png)
+![DGX Widget screenshot](assets/preview.png)
 
 ## How it works
 
