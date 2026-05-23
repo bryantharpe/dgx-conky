@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fetch GPU + system memory from the DGX Spark and emit Conky-formatted text.
+# Fetch CPU, GPU, and system memory from the DGX Spark and emit Conky-formatted text.
 # Reuses one SSH connection via ControlMaster so polling is fast.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,10 +24,13 @@ if ! ssh -O check "${ssh_opts[@]}" "${USER}@${HOST}" 2>/dev/null; then
     -i "$KEY" "${USER}@${HOST}" 2>/dev/null
 fi
 
-OUT=$(ssh "${ssh_opts[@]}" "${USER}@${HOST}" \
-  'nvidia-smi --query-gpu=name,utilization.gpu --format=csv,noheader,nounits;
-   echo ---;
-   grep -E "^(MemTotal|MemAvailable):" /proc/meminfo' 2>/dev/null)
+OUT=$(ssh "${ssh_opts[@]}" "${USER}@${HOST}" '
+  nvidia-smi --query-gpu=name,utilization.gpu --format=csv,noheader,nounits
+  echo ---
+  grep -E "^(MemTotal|MemAvailable):" /proc/meminfo
+  echo ---
+  vmstat 1 1 | tail -1
+' 2>/dev/null)
 
 if [ -z "$OUT" ]; then
   echo '${color #e74c3c}offline${color}'
@@ -43,6 +46,10 @@ MEMAVAIL_KB=$(printf '%s\n' "$OUT" | awk '/MemAvailable:/{print $2}')
 TOTAL_GB=$(awk "BEGIN{printf \"%.0f\", $MEMTOTAL_KB / 1024 / 1024}")
 USED_GB=$(awk "BEGIN{printf \"%.2f\", ($MEMTOTAL_KB - $MEMAVAIL_KB) / 1024 / 1024}")
 MEM_PCT=$(awk "BEGIN{printf \"%.0f\", ($MEMTOTAL_KB - $MEMAVAIL_KB) / $MEMTOTAL_KB * 100}")
+
+VMSTAT_LINE=$(printf '%s\n' "$OUT" | tail -1)
+CPU_IDLE=$(printf '%s' "$VMSTAT_LINE" | awk '{print $15}')
+CPU_PCT=$((100 - CPU_IDLE))
 
 color_for() {
   local pct=$1
@@ -61,11 +68,14 @@ bar() {
   for ((i=0; i<width-filled; i++)); do printf '░'; done
 }
 
+CPU_COLOR=$(color_for "$CPU_PCT")
 UTIL_COLOR=$(color_for "$UTIL")
 MEM_COLOR=$(color_for "$MEM_PCT")
+CPU_BAR=$(bar "$CPU_PCT" 12)
 UTIL_BAR=$(bar "$UTIL" 12)
 MEM_BAR=$(bar "$MEM_PCT" 12)
 
 printf '%s\n' "\${color #cccccc}${NAME}\${color}"
+printf '%s\n' "CPU   \${color ${CPU_COLOR}}${CPU_BAR}  ${CPU_PCT}%\${color}"
 printf '%s\n' "GPU   \${color ${UTIL_COLOR}}${UTIL_BAR}  ${UTIL}%\${color}"
 printf '%s\n' "MEM   \${color ${MEM_COLOR}}${MEM_BAR}  ${USED_GB} / ${TOTAL_GB} GB\${color}"

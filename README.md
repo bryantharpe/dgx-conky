@@ -1,6 +1,6 @@
 # dgx-conky
 
-A lightweight desktop widget that displays live GPU utilization and system memory stats from a remote [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark/) over SSH.
+A lightweight desktop widget that displays live CPU utilization, GPU utilization, and system memory stats from a remote [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark/) over SSH.
 
 Built on [Conky](https://github.com/brndnmtthws/conky), it renders as a transparent overlay pinned to the desktop — always visible, never in the way.
 
@@ -8,9 +8,11 @@ Built on [Conky](https://github.com/brndnmtthws/conky), it renders as a transpar
 
 ## How it works
 
-A shell script (`dgx_metrics.sh`) opens a persistent SSH `ControlMaster` connection to the DGX and polls it every 3 seconds, querying `nvidia-smi` for GPU utilization and `/proc/meminfo` for system RAM. Results are formatted as Conky markup with color-coded progress bars and fed to the widget via `execpi`. The ControlMaster socket is reused across polls so there is no per-refresh SSH handshake overhead.
+A shell script (`dgx_metrics.sh`) opens a persistent SSH `ControlMaster` connection to the DGX and polls it every 3 seconds. Each poll queries `nvidia-smi` for GPU utilization, `/proc/meminfo` for system RAM, and `vmstat` for CPU utilization. Results are formatted as Conky markup with color-coded progress bars in **CPU / GPU / MEM** order and fed to the widget via `execpi`. The ControlMaster socket is reused across polls so there is no per-refresh SSH handshake overhead.
 
-Color thresholds:
+The CPU metric is useful for catching misconfigured model inference — a high CPU bar alongside a low GPU bar is a strong signal that a model is running on CPU instead of GPU.
+
+Color thresholds (applied to all three metrics):
 
 | Usage | Color |
 |---|---|
