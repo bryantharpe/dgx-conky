@@ -10,6 +10,7 @@ HOST="${DGX_HOST:?DGX_HOST not set — copy .env.example to .env and configure i
 USER="${DGX_USER:?DGX_USER not set}"
 KEY="${DGX_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 SOCKET="/tmp/dgx-ssh-${USER}@${HOST}.sock"
+LOCK="/tmp/dgx-ssh-${USER}.lock"
 
 ssh_opts=(
   -S "$SOCKET"
@@ -17,12 +18,23 @@ ssh_opts=(
   -o ConnectTimeout=5
 )
 
-if ! ssh -O check "${ssh_opts[@]}" "${USER}@${HOST}" 2>/dev/null; then
-  ssh -fNM "${ssh_opts[@]}" \
-    -o ControlPersist=600 \
-    -o StrictHostKeyChecking=accept-new \
-    -i "$KEY" "${USER}@${HOST}" 2>/dev/null
-fi
+# Ensure exactly one shared master is alive, self-healing from a stale socket.
+# Serialize with flock so overlapping polls can't herd-spawn rival masters; if a
+# poll runs long and holds the lock, we skip master setup rather than pile on.
+(
+  flock -w 10 9 || exit 0
+  if ! ssh -O check "${ssh_opts[@]}" "${USER}@${HOST}" 2>/dev/null; then
+    # Master is dead: drop any stale socket so -fNM binds a fresh master
+    # instead of silently disabling multiplexing and orphaning the login.
+    rm -f "$SOCKET"
+    ssh -fNM "${ssh_opts[@]}" \
+      -o ControlPersist=600 \
+      -o ServerAliveInterval=15 \
+      -o ServerAliveCountMax=3 \
+      -o StrictHostKeyChecking=accept-new \
+      -i "$KEY" "${USER}@${HOST}" 2>/dev/null
+  fi
+) 9>"$LOCK"
 
 OUT=$(ssh "${ssh_opts[@]}" "${USER}@${HOST}" '
   nvidia-smi --query-gpu=name,utilization.gpu --format=csv,noheader,nounits
